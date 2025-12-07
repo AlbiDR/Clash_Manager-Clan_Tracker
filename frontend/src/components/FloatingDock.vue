@@ -12,6 +12,7 @@ const navItems = [
 ]
 
 function navigate(path: string) {
+  if (navigator.vibrate) navigator.vibrate(10) // Small pop
   router.push(path)
 }
 </script>
@@ -62,6 +63,9 @@ function navigate(path: string) {
   background: var(--sys-color-on-surface); 
   color: var(--sys-color-surface); 
   font-weight: 700; 
+  /* Interaction Layer: Glow effect */
+  box-shadow: 0 0 15px rgba(var(--sys-color-primary-rgb), 0.3);
+  transform: translateY(-2px);
 }
 
 /* Mobile Adjustment: Tighter padding if many items */

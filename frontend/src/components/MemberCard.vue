@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { LeaderboardMember } from '../types'
 import Icon from './Icon.vue'
 
@@ -55,28 +55,26 @@ const historyBars = computed(() => {
   return bars
 })
 
-// Long Press Logic
-let lpTimer: any = null
-const lpDuration = 500
-const isLongPress = ref(false)
 
-function startPress() {
-  isLongPress.value = false
-  lpTimer = setTimeout(() => {
-    isLongPress.value = true // Mark as long press trigger
-    if (navigator.vibrate) navigator.vibrate(50)
-    
-    // If NOT in selection mode, enter it and select this item
-    // If IN selection mode, just toggle this item
-    emit('toggle-select')
-  }, lpDuration)
-}
 
-function cancelPress() {
-  if (lpTimer) {
-    clearTimeout(lpTimer)
-    lpTimer = null
-  }
+// Composables
+import { useLongPress } from '../composables/useLongPress'
+import { useShare } from '../composables/useShare'
+
+const { isLongPress, start: startPress, cancel: cancelPress } = useLongPress(() => {
+  // If NOT in selection mode, enter it and select this item
+  // If IN selection mode, just toggle this item
+  emit('toggle-select')
+})
+
+const { canShare, share } = useShare()
+
+function shareMember() {
+  share({
+    title: `Clash Manager: ${props.member.n}`,
+    text: `Check out ${props.member.n} (${props.member.d.role}) in our clan!`,
+    url: `https://royaleapi.com/player/${props.member.id}`
+  })
 }
 
 function handleClick(e: Event) {
@@ -100,19 +98,6 @@ function handleClick(e: Event) {
     emit('toggle-select')
   } else {
     emit('toggle')
-  }
-}
-
-// Share Logic
-const canShare = typeof navigator !== 'undefined' && !!navigator.share
-
-function shareMember() {
-  if (navigator.share) {
-    navigator.share({
-      title: `Clash Manager: ${props.member.n}`,
-      text: `Check out ${props.member.n} (${props.member.d.role}) in our clan!`,
-      url: `https://royaleapi.com/player/${props.member.id}`
-    }).catch(console.error)
   }
 }
 </script>

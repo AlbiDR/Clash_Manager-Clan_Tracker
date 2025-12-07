@@ -7,6 +7,7 @@
 :root {
   /* 🌈 Color System (Neo-Material 2026) */
   --sys-color-primary: #0061a4;
+  --sys-color-primary-rgb: 0, 97, 164;
   --sys-color-on-primary: #ffffff;
   --sys-color-primary-container: #d1e4ff;
   --sys-color-on-primary-container: #001d36;
@@ -16,6 +17,7 @@
   --sys-color-on-secondary-container: #101c2b;
 
   --sys-color-tertiary: #6b5778;
+  --sys-color-tertiary-rgb: 107, 87, 120;
   --sys-color-tertiary-container: #f2daff;
   --sys-color-on-tertiary-container: #251431;
 
@@ -77,6 +79,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --sys-color-primary: #9ecaff;
+    --sys-color-primary-rgb: 158, 202, 255;
     --sys-color-on-primary: #003258;
     --sys-color-primary-container: #00497d;
     --sys-color-on-primary-container: #d1e4ff;
@@ -86,6 +89,7 @@
     --sys-color-on-secondary-container: #d7e3f7;
 
     --sys-color-tertiary: #d6bee4;
+    --sys-color-tertiary-rgb: 214, 190, 228;
     --sys-color-tertiary-container: #523f5f;
     --sys-color-on-tertiary-container: #f2daff;
 
@@ -134,6 +138,11 @@ html {
 body {
   margin: 0;
   background-color: var(--sys-color-background);
+  /* Depth Layer: Subtle gradient to give atmosphere */
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(var(--sys-color-primary-rgb), 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(var(--sys-color-tertiary-rgb), 0.03) 0%, transparent 40%);
+  background-attachment: fixed;
   color: var(--sys-color-on-background);
   font-family: var(--sys-typescale-body);
   /* Space for Dock + Safe Area */
@@ -230,18 +239,20 @@ body {
   font-size: 14px;
   text-decoration: none;
   border-radius: var(--shape-corner-full);
-  transition: transform 0.2s;
+  transition: transform 0.2s var(--sys-motion-spring), background-color 0.2s;
   cursor: pointer;
   border: none;
 }
 
 .btn-action:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
+  /* More satisfying click */
 }
 
 .btn-action.primary {
   background: var(--sys-color-primary);
   color: var(--sys-color-on-primary);
+  box-shadow: var(--sys-elevation-1);
 }
 
 .btn-action.secondary {

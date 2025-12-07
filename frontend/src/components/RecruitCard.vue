@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { Recruit } from '../types'
 import Icon from './Icon.vue'
 
@@ -34,38 +34,24 @@ const timeAgo = computed(() => {
   return m > 60 ? Math.floor(m/60) + 'h ago' : m + 'm ago'
 })
 
-// Long Press Logic
-let lpTimer: any = null
-const lpDuration = 500
-const isLongPress = ref(false)
 
-function startPress() {
-  isLongPress.value = false
-  lpTimer = setTimeout(() => {
-    isLongPress.value = true
-    if (navigator.vibrate) navigator.vibrate(50)
-    emit('toggle-select')
-  }, lpDuration)
-}
 
-// Share Logic
-const canShare = typeof navigator !== 'undefined' && !!navigator.share
+// Composables
+import { useLongPress } from '../composables/useLongPress'
+import { useShare } from '../composables/useShare'
+
+const { isLongPress, start: startPress, cancel: cancelPress } = useLongPress(() => {
+  emit('toggle-select')
+})
+
+const { canShare, share } = useShare()
 
 function shareRecruit() {
-  if (navigator.share) {
-    navigator.share({
-      title: `Recruit: ${props.recruit.n}`,
-      text: `Found a potential recruit: ${props.recruit.n} (Score: ${Math.round(props.recruit.s || 0)})`,
-      url: `https://royaleapi.com/player/${props.recruit.id}`
-    }).catch(console.error)
-  }
-}
-
-function cancelPress() {
-  if (lpTimer) {
-    clearTimeout(lpTimer)
-    lpTimer = null
-  }
+  share({
+    title: `Recruit: ${props.recruit.n}`,
+    text: `Found a potential recruit: ${props.recruit.n} (Score: ${Math.round(props.recruit.s || 0)})`,
+    url: `https://royaleapi.com/player/${props.recruit.id}`
+  })
 }
 
 function handleClick(e: Event) {
