@@ -7,6 +7,8 @@ import MemberCard from '../components/MemberCard.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import EmptyState from '../components/EmptyState.vue'
 import ErrorState from '../components/ErrorState.vue'
+import Icon from '../components/Icon.vue'
+
 const route = useRoute()
 
 const members = ref<LeaderboardMember[]>([])
@@ -14,9 +16,13 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
 const sortBy = ref<'score' | 'trophies' | 'name'>('score')
+const showSortMenu = ref(false)
+const isScrolled = ref(false)
 
-// Expansion state
+// Expansion & Selection
 const expandedIds = ref<Set<string>>(new Set())
+const selectedIds = ref<Set<string>>(new Set())
+const selectionMode = ref(false)
 
 function toggleExpand(id: string) {
   if (expandedIds.value.has(id)) {
@@ -26,6 +32,24 @@ function toggleExpand(id: string) {
   }
   // Force reactivity
   expandedIds.value = new Set(expandedIds.value)
+}
+
+function toggleSelect(id: string) {
+  if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id)
+  } else {
+    selectedIds.value.add(id)
+    if (!selectionMode.value) selectionMode.value = true
+  }
+  selectedIds.value = new Set(selectedIds.value)
+  
+  if (selectedIds.value.size === 0) {
+    selectionMode.value = false
+  }
+}
+
+function getRank(id: string): number {
+  return members.value.findIndex(m => m.id === id) + 1
 }
 
 // Filtered and sorted members
@@ -99,53 +123,80 @@ onMounted(loadData)
   <div class="leaderboard-view">
     <PullToRefresh @refresh="loadData" />
     
-    <!-- Header Controls -->
-    <div class="stats-bar glass-card animate-fade-in">
-      <div class="stat">
-        <span class="stat-value">{{ stats.total }}</span>
-        <span class="stat-label">Members</span>
+    <!-- Functional Top App Bar -->
+    <header class="top-app-bar" :class="{ 'scrolled': isScrolled }">
+      <div class="toolbar-content">
+        <h1 class="page-title" v-if="!selectionMode">Leaderboard</h1>
+        <div class="selection-header" v-else>
+          <button class="icon-btn" @click="selectionMode = false">
+            <Icon name="close" />
+          </button>
+          <span class="selection-count">{{ selectedIds.size }} selected</span>
+        </div>
+        
+        <div class="actions">
+          <button 
+            v-if="!selectionMode"
+            class="icon-btn" 
+            @click="selectionMode = true"
+            v-tooltip="'Select'"
+          >
+            <Icon name="check" />
+          </button>
+          <button 
+            class="icon-btn"
+            @click="loadData"
+            :disabled="loading"
+            v-tooltip="'Refresh'"
+          >
+            <Icon name="refresh" :class="{ 'spin': loading }" />
+          </button>
+        </div>
       </div>
-      <div class="stat">
-        <span class="stat-value">{{ stats.avgScore.toLocaleString() }}</span>
-        <span class="stat-label">Avg Score</span>
+      
+      <!-- Stats Summary (Collapsed in bar or just below) -->
+      <div class="stats-ticker" v-if="!selectionMode">
+        <span>{{ stats.total }} Members</span>
+        <span class="dot">•</span>
+        <span>{{ stats.avgScore.toLocaleString() }} Avg Score</span>
       </div>
-      <div class="stat">
-        <span class="stat-value">{{ stats.avgTrophies.toLocaleString() }}</span>
-        <span class="stat-label">Avg Trophies</span>
-      </div>
-    </div>
-    
-    <!-- Controls -->
-    <div class="controls animate-fade-in" style="animation-delay: 0.1s">
-      <div class="search-box glass">
-        <span class="search-icon">🔍</span>
+    </header>
+
+    <!-- Floating Search & Filter Bar -->
+    <div class="search-container animate-fade-in">
+      <div class="search-bar surface-container-high">
+        <Icon name="search" class="search-leading-icon" />
         <input 
           v-model="searchQuery"
           type="text" 
           placeholder="Search members..."
           class="search-input"
         />
-      </div>
-      
-      <div class="sort-buttons">
         <button 
-          v-for="option in [
-            { key: 'score', label: 'Score', icon: '⭐' },
-            { key: 'trophies', label: 'Trophies', icon: '🏆' },
-            { key: 'name', label: 'Name', icon: 'Aa' }
-          ]"
-          :key="option.key"
-          class="sort-btn"
-          :class="{ 'sort-btn-active': sortBy === option.key }"
-          @click="sortBy = option.key as typeof sortBy"
+          class="icon-btn filter-btn"
+          @click="showSortMenu = !showSortMenu"
+          v-tooltip="'Sort'"
         >
-          {{ option.icon }}
+          <Icon name="filter" />
         </button>
       </div>
       
-      <button class="btn btn-secondary" @click="loadData" :disabled="loading">
-        {{ loading ? '...' : '🔄' }}
-      </button>
+      <!-- Expandable Sort Options -->
+      <div class="sort-options" :class="{ 'open': showSortMenu }">
+        <button 
+          v-for="option in [
+            { key: 'score', label: 'Score' },
+            { key: 'trophies', label: 'Trophies' },
+            { key: 'name', label: 'Name' }
+          ]"
+          :key="option.key"
+          class="chip"
+          :class="{ 'chip-active': sortBy === option.key }"
+          @click="sortBy = option.key as typeof sortBy"
+        >
+          {{ option.label }}
+        </button>
+      </div>
     </div>
     
     <!-- Error State -->
@@ -174,14 +225,17 @@ onMounted(loadData)
     
     <!-- Member List -->
     <div v-else class="member-list stagger-children">
-      <MemberCard 
-        v-for="(member, index) in filteredMembers" 
+      <MemberCard
+        v-for="member in filteredMembers"
         :key="member.id"
         :id="`member-${member.id}`"
         :member="member"
-        :rank="index + 1"
+        :rank="getRank(member.id)"
         :expanded="expandedIds.has(member.id)"
+        :selected="selectedIds.has(member.id)"
+        :selection-mode="selectionMode"
         @toggle="toggleExpand(member.id)"
+        @toggle-select="toggleSelect(member.id)"
       />
     </div>
   </div>
@@ -192,119 +246,184 @@ onMounted(loadData)
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: 100%;
 }
 
-/* Stats Bar */
-.stats-bar {
-  display: flex;
-  justify-content: space-around;
-  padding: 1rem;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  background: var(--cr-gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--cr-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Controls */
-.controls {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.search-box {
-  flex: 1;
+/* Actions */
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.75rem;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.search-icon {
-  font-size: 1rem;
+.icon-btn:hover {
+  background-color: var(--md-sys-color-surface-variant);
+}
+
+.icon-btn:disabled {
   opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* Top App Bar */
+.top-app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--md-sys-color-surface);
+  transition: all 0.2s ease;
+  padding: 0.5rem 1rem;
+}
+
+.top-app-bar.scrolled {
+  background: var(--md-sys-color-surface-container);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+}
+
+.page-title {
+  font-size: 1.375rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.selection-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.selection-count {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.stats-ticker {
+  font-size: 0.75rem;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-top: 0.25rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dot { font-weight: bold; }
+
+/* Floating Search Bar */
+.search-container {
+  padding: 1rem;
+  background: transparent;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: 2rem; /* Fully rounded */
+  gap: 0.75rem;
+  box-shadow: var(--md-sys-elevation-1);
+}
+
+.search-leading-icon {
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .search-input {
   flex: 1;
-  background: none;
+  background: transparent;
   border: none;
+  font-size: 1rem;
+  color: var(--md-sys-color-on-surface);
   outline: none;
-  color: var(--cr-text-primary);
-  font-size: 0.875rem;
 }
 
 .search-input::placeholder {
-  color: var(--cr-text-muted);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
-.sort-buttons {
+/* Sort Options */
+.sort-options {
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s var(--md-sys-motion-easing-emphasized);
   display: flex;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  margin-top: 0;
+  padding: 0 0.5rem;
 }
 
-.sort-btn {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.sort-options.open {
+  max-height: 100px;
+  margin-top: 0.75rem;
+}
+
+.chip {
+  padding: 0.375rem 1rem;
   border-radius: 0.5rem;
-  background: var(--cr-bg-tertiary);
-  border: 1px solid transparent;
-  color: var(--cr-text-muted);
-  cursor: pointer;
-  transition: all 0.2s;
+  border: 1px solid var(--md-sys-color-outline);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.sort-btn:hover {
-  color: var(--cr-text-primary);
+.chip-active {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-color: transparent;
 }
 
-.sort-btn-active {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: var(--cr-primary);
-  color: var(--cr-primary-light);
-}
-
-/* Member List */
 .member-list {
+  padding: 0 1rem 120px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
-/* Skeleton */
+/* Skeletons */
 .skeleton-card {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem;
+  background: var(--md-sys-color-surface-container);
+  border-radius: var(--md-sys-shape-corner-large);
+  animation: pulse 1.5s infinite;
 }
 
-.skeleton-content {
-  flex: 1;
+.skeleton {
+  background: var(--md-sys-color-surface-variant);
+  border-radius: 4px;
 }
 
 /* Error/Empty States */

@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import type { LeaderboardMember } from '../types'
 import WarHistoryChart from './WarHistoryChart.vue'
+import Icon from './Icon.vue'
+import { computed } from 'vue'
 
 const props = defineProps<{
   member: LeaderboardMember
   rank: number
   expanded: boolean
+  selected?: boolean
+  selectionMode?: boolean
 }>()
 
 const emit = defineEmits<{
   toggle: []
+  toggleSelect: []
 }>()
 
 function getRoleBadgeClass(role: string): string {
@@ -40,14 +45,43 @@ function openInGame() {
 function openRoyaleAPI() {
   window.open(`https://royaleapi.com/player/${props.member.id}`, '_blank')
 }
+
+const checkboxClasses = computed(() => 
+  props.selected ? 'selection-checkbox selected' : 'selection-checkbox'
+)
+
+function handleCardClick() {
+  if (props.selectionMode) {
+    emit('toggleSelect')
+  } else {
+    emit('toggle')
+  }
+}
+
+function handleSelectClick(e: Event) {
+  e.stopPropagation()
+  emit('toggleSelect')
+}
 </script>
 
 <template>
   <div 
     class="member-card"
-    :class="{ 'member-card-expanded': expanded }"
-    @click="emit('toggle')"
+    :class="{ 
+      'member-card-expanded': expanded,
+      'member-card-selected': selected 
+    }"
+    @click="handleCardClick"
   >
+    <!-- Explicit Selection Indicator/Checkbox -->
+    <div 
+      :class="checkboxClasses" 
+      @click="handleSelectClick"
+    >
+      <transition name="scale">
+        <Icon v-if="selected" name="check" size="14" class="check-mark" />
+      </transition>
+    </div>
     <!-- Main Row -->
     <div class="card-header">
       <!-- Rank Badge -->
@@ -73,15 +107,15 @@ function openRoyaleAPI() {
         
         <div class="member-stats">
           <span class="stat-item">
-            <span class="stat-icon">🏆</span>
+            <Icon name="trophy" size="12" class="stat-icon" />
             {{ member.t.toLocaleString() }}
           </span>
           <span class="stat-item">
-            <span class="stat-icon">⚔️</span>
+            <Icon name="warlog" size="12" class="stat-icon" />
             {{ member.d.rate }}
           </span>
           <span class="stat-item" v-if="member.d.days > 0">
-            <span class="stat-icon">📅</span>
+            <span class="stat-icon">📅</span> <!-- Calendar icon not in set, keep emoji or add? 'donation' is similar visual weight -->
             {{ member.d.days }}d
           </span>
         </div>
@@ -94,7 +128,7 @@ function openRoyaleAPI() {
           <span class="stat-sub">SCORE</span>
         </div>
         <div class="chevron-btn" :class="{ 'chevron-open': expanded }">
-          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          <Icon name="expand" size="20" />
         </div>
       </div>
     </div>
@@ -136,20 +170,64 @@ function openRoyaleAPI() {
 <style scoped>
 .member-card {
   background: var(--md-sys-color-surface-container, #f3f3f3);
-  border-radius: 1.25rem;
+  border-radius: var(--md-sys-shape-corner-large);
   padding: 1rem;
+  padding-left: 3.5rem; /* Space for checkbox */
+  position: relative;
+  transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+  border: 1px solid transparent; /* Prevent jump */
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  border: 1px solid transparent;
 }
 
 .member-card:active {
   transform: scale(0.98);
 }
 
+.member-card-selected {
+  background: var(--md-sys-color-secondary-container);
+  border-color: var(--md-sys-color-primary);
+}
+
 .member-card-expanded {
-  background: var(--md-sys-color-surface-container-high, #e8e8e8);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-2);
+}
+
+/* Duplicated selection styles for parity with RecruitCard */
+.selection-checkbox {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--md-sys-color-outline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.selection-checkbox.selected {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.check-mark {
+  color: var(--md-sys-color-on-primary);
+}
+
+.scale-enter-active,
+.scale-leave-active {
+  transition: transform 0.2s ease;
+}
+
+.scale-enter-from,
+.scale-leave-to {
+  transform: scale(0);
 }
 
 /* Header Layout */

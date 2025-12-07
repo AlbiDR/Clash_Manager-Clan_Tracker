@@ -2,31 +2,34 @@
 import { ref, computed, onMounted } from 'vue'
 import { getWarLog } from '../api/gasClient'
 import type { WarLogEntry } from '../types'
+import PullToRefresh from '../components/PullToRefresh.vue'
+import EmptyState from '../components/EmptyState.vue'
+import ErrorState from '../components/ErrorState.vue'
+import Icon from '../components/Icon.vue'
 
-const warLog = ref<WarLogEntry[]>([])
+const logs = ref<WarLogEntry[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
 // Stats
-const stats = computed(() => {
-  const wins = warLog.value.filter(w => w.result === 'win').length
-  const losses = warLog.value.filter(w => w.result === 'lose').length
-  const total = wins + losses
+const seasonStats = computed(() => {
+  const wins = logs.value.filter(l => l.result === 'win').length
+  const total = logs.value.length
   const winRate = total > 0 ? Math.round((wins / total) * 100) : 0
+  const totalFame = logs.value.reduce((sum, l) => sum + l.score, 0)
   
-  return { wins, losses, winRate, total: warLog.value.length }
+  return { wins, total, winRate, totalFame }
 })
 
 async function loadData() {
   loading.value = true
   error.value = null
-  
   try {
     const response = await getWarLog()
     if (response.status === 'success' && response.data) {
-      warLog.value = response.data
+      logs.value = response.data
     } else {
-      error.value = response.error?.message || 'Failed to load data'
+      error.value = response.error?.message || 'Failed to load war log'
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Network error'
@@ -35,13 +38,14 @@ async function loadData() {
   }
 }
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-  })
+function getDayLabel(isoString: string) {
+  const date = new Date(isoString)
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+function getResultColor(result: string) {
+  if (result === 'win') return 'var(--md-sys-color-primary)' // Green/Primary
+  return 'var(--md-sys-color-error)' // Red/Error
 }
 
 onMounted(loadData)
@@ -49,92 +53,87 @@ onMounted(loadData)
 
 <template>
   <div class="warlog-view">
-    <!-- Stats Summary -->
-    <div class="stats-bar glass-card animate-fade-in">
-      <div class="stat">
-        <span class="stat-value stat-wins">{{ stats.wins }}</span>
-        <span class="stat-label">Wins</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value stat-losses">{{ stats.losses }}</span>
-        <span class="stat-label">Losses</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">{{ stats.winRate }}%</span>
-        <span class="stat-label">Win Rate</span>
-      </div>
-    </div>
+    <PullToRefresh @refresh="loadData" />
     
-    <!-- Refresh Button -->
-    <div class="controls animate-fade-in" style="animation-delay: 0.1s">
-      <h2 class="section-title">Battle History</h2>
-      <button class="btn btn-secondary" @click="loadData" :disabled="loading">
-        {{ loading ? '...' : '🔄' }}
-      </button>
+    <!-- Top App Bar -->
+    <header class="top-app-bar">
+      <h1 class="page-title">War History</h1>
+      <div class="actions">
+         <button 
+            class="icon-btn"
+            @click="loadData"
+            :disabled="loading"
+            v-tooltip="'Refresh'"
+          >
+            <Icon name="refresh" :class="{ 'spin': loading }" />
+          </button>
+      </div>
+    </header>
+
+    <!-- Season Summary Card -->
+    <div class="summary-card animate-fade-in" v-if="!loading && !error && logs.length > 0">
+      <div class="summary-row">
+        <div class="summary-item">
+          <span class="summary-value">{{ seasonStats.winRate }}%</span>
+          <span class="summary-label">Win Rate</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-value">{{ seasonStats.wins }}</span>
+          <span class="summary-label">Wins</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-value">{{ seasonStats.totalFame.toLocaleString() }}</span>
+          <span class="summary-label">Total Fame</span>
+        </div>
+      </div>
     </div>
     
     <!-- Error State -->
-    <div v-if="error" class="error-state glass-card">
-      <span class="error-icon">⚠️</span>
-      <p>{{ error }}</p>
-      <button class="btn btn-primary" @click="loadData">Retry</button>
-    </div>
+    <ErrorState 
+      v-if="error" 
+      :message="error" 
+      @retry="loadData" 
+    />
     
     <!-- Loading State -->
-    <div v-else-if="loading" class="war-list stagger-children">
-      <div v-for="i in 6" :key="i" class="skeleton-card glass-card">
-        <div class="skeleton" style="width: 60px; height: 60px; border-radius: 0.5rem;"></div>
-        <div class="skeleton-content">
-          <div class="skeleton" style="width: 70%; height: 1rem; margin-bottom: 0.5rem;"></div>
-          <div class="skeleton" style="width: 50%; height: 0.75rem;"></div>
-        </div>
-      </div>
+    <div v-else-if="loading" class="log-list">
+      <div v-for="i in 5" :key="i" class="skeleton-log"></div>
     </div>
     
     <!-- Empty State -->
-    <div v-else-if="warLog.length === 0" class="empty-state glass-card">
-      <span class="empty-icon">⚔️</span>
-      <p>No war history available</p>
-    </div>
+    <EmptyState 
+      v-else-if="logs.length === 0"
+      message="No war history found"
+      hint="Complete a war to see data here"
+    />
     
-    <!-- War Log List -->
-    <div v-else class="war-list stagger-children">
+    <!-- Log List -->
+    <div v-else class="log-list stagger-children">
       <div 
-        v-for="(war, index) in warLog" 
-        :key="index"
-        class="war-card glass-card"
-        :class="{ 
-          'war-win': war.result === 'win', 
-          'war-lose': war.result === 'lose',
-          'war-na': war.result === 'n/a'
-        }"
+        v-for="entry in logs" 
+        :key="entry.endTime"
+        class="log-card"
       >
-        <!-- Result Badge -->
-        <div class="result-badge" :class="`result-${war.result}`">
-          <span v-if="war.result === 'win'">🏆</span>
-          <span v-else-if="war.result === 'lose'">💀</span>
-          <span v-else>—</span>
+        <!-- Left: Result Indicator -->
+        <div class="position-indicator" :style="{ backgroundColor: getResultColor(entry.result) }">
+          <span class="pos-number">{{ entry.result === 'win' ? 'W' : 'L' }}</span>
         </div>
         
-        <!-- War Details -->
-        <div class="war-details">
-          <div class="war-header">
-            <span class="opponent-name">vs {{ war.opponent }}</span>
-            <span class="war-date">{{ formatDate(war.endTime) }}</span>
-          </div>
-          
-          <div class="score-comparison">
-            <span class="our-score">{{ war.score.toLocaleString() }}</span>
-            <span class="score-separator">-</span>
-            <span class="their-score">{{ war.opponentScore.toLocaleString() }}</span>
+        <!-- Center: Date & Participants -->
+        <div class="log-info">
+          <span class="log-date">{{ getDayLabel(entry.endTime) }}</span>
+          <div class="log-participants">
+            <Icon name="group" size="14" />
+            <span>{{ entry.teamSize }} vs {{ entry.opponent }}</span>
           </div>
         </div>
         
-        <!-- Result Text -->
-        <div class="result-text">
-          <span class="badge" :class="`badge-${war.result === 'win' ? 'victory' : war.result === 'lose' ? 'defeat' : 'member'}`">
-            {{ war.result === 'win' ? 'Victory' : war.result === 'lose' ? 'Defeat' : 'N/A' }}
-          </span>
+        <!-- Right: Score -->
+        <div class="log-score">
+          <span class="score-val">{{ entry.score.toLocaleString() }}</span>
+          <Icon name="trophy" size="14" />
         </div>
       </div>
     </div>
@@ -143,204 +142,149 @@ onMounted(loadData)
 
 <style scoped>
 .warlog-view {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  min-height: 100vh;
+  padding-bottom: 120px;
 }
 
-/* Stats Bar */
-.stats-bar {
+/* Duplicated Top Bar Styles (Should act. correspond to global styles if possible) */
+.top-app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--md-sys-color-surface);
   display: flex;
-  justify-content: space-around;
-  padding: 1.25rem 1rem;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  background: var(--cr-gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-wins {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-losses {
-  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--cr-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Controls */
-.controls {
-  display: flex;
   justify-content: space-between;
-  align-items: center;
+  padding: 0.5rem 1rem;
+  height: 64px;
 }
 
-.section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--cr-text-primary);
+.page-title {
+  font-size: 1.375rem;
+  font-weight: 500;
   margin: 0;
 }
 
-/* War List */
-.war-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.war-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border-left: 3px solid transparent;
-}
-
-.war-win {
-  border-left-color: var(--cr-victory);
-}
-
-.war-lose {
-  border-left-color: var(--cr-defeat);
-}
-
-.war-na {
-  border-left-color: var(--cr-neutral);
-}
-
-/* Result Badge */
-.result-badge {
-  width: 3rem;
-  height: 3rem;
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.75rem;
-  font-size: 1.5rem;
-  flex-shrink: 0;
+  cursor: pointer;
 }
 
-.result-win {
-  background: rgba(16, 185, 129, 0.2);
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Summary Card */
+.summary-card {
+  margin: 1rem;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-radius: var(--md-sys-shape-corner-large);
+  padding: 1.5rem 1rem;
 }
 
-.result-lose {
-  background: rgba(239, 68, 68, 0.2);
-}
-
-.result-n\/a {
-  background: var(--cr-bg-tertiary);
-}
-
-/* War Details */
-.war-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.war-header {
+.summary-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
 }
 
-.opponent-name {
-  font-weight: 600;
-  font-size: 0.9375rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.war-date {
-  font-size: 0.75rem;
-  color: var(--cr-text-muted);
-  flex-shrink: 0;
-}
-
-.score-comparison {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.our-score {
-  color: var(--cr-text-primary);
-  font-weight: 600;
-}
-
-.score-separator {
-  color: var(--cr-text-muted);
-}
-
-.their-score {
-  color: var(--cr-text-secondary);
-}
-
-/* Result Text */
-.result-text {
-  flex-shrink: 0;
-}
-
-/* Skeleton */
-.skeleton-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.skeleton-content {
-  flex: 1;
-}
-
-/* Error/Empty States */
-.error-state,
-.empty-state {
+.summary-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem;
-  text-align: center;
+  flex: 1;
 }
 
-.error-icon,
-.empty-icon {
-  font-size: 3rem;
+.summary-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.error-state p,
-.empty-state p {
-  color: var(--cr-text-secondary);
-  margin: 0;
+.summary-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+}
+
+.summary-divider {
+  width: 1px;
+  height: 2rem;
+  background: var(--md-sys-color-on-primary-container);
+  opacity: 0.2;
+}
+
+/* Log List */
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 1rem;
+}
+
+.log-card {
+  display: flex;
+  align-items: center;
+  background: var(--md-sys-color-surface-container);
+  border-radius: 1rem;
+  overflow: hidden;
+  height: 72px; /* Fixed height for consistency */
+}
+
+.position-indicator {
+  width: 3.5rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.log-info {
+  flex: 1;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.log-date {
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+.log-participants {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.log-score {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 1.25rem;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+.skeleton-log {
+  height: 72px;
+  border-radius: 1rem;
+  background: var(--md-sys-color-surface-container);
+  animation: pulse 1.5s infinite;
 }
 </style>

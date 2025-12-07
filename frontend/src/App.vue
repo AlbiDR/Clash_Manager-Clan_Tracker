@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { RouterView, RouterLink, useRoute } from 'vue-router'
 import { isConfigured, ping } from './api/gasClient'
+import Icon from './components/Icon.vue'
 
 const route = useRoute()
 const isOnline = ref(true)
@@ -9,10 +10,10 @@ const apiStatus = ref<'checking' | 'online' | 'offline' | 'unconfigured'>('check
 
 // Navigation items
 const navItems = [
-  { path: '/', name: 'leaderboard', icon: '🏆', label: 'Leaderboard' },
-  { path: '/recruiter', name: 'recruiter', icon: '🔭', label: 'Recruiter' },
-  { path: '/warlog', name: 'warlog', icon: '⚔️', label: 'War Log' },
-  { path: '/settings', name: 'settings', icon: '⚙️', label: 'Settings' }
+  { path: '/', name: 'leaderboard', icon: 'leaderboard', label: 'Leaderboard' },
+  { path: '/recruiter', name: 'recruiter', icon: 'recruiter', label: 'Recruiter' },
+  { path: '/warlog', name: 'warlog', icon: 'warlog', label: 'War Log' },
+  { path: '/settings', name: 'settings', icon: 'settings', label: 'Settings' }
 ]
 
 onMounted(async () => {
@@ -71,17 +72,20 @@ onMounted(async () => {
       </RouterView>
     </main>
     
-    <!-- Floating Dock Navigation -->
-    <nav class="floating-dock">
+    <!-- Navigation Bar (Standard MD3) -->
+    <nav class="bottom-nav-bar">
       <RouterLink
         v-for="item in navItems"
         :key="item.name"
         :to="item.path"
-        class="dock-item"
-        :class="{ 'dock-item-active': route.name === item.name }"
+        class="nav-item"
+        active-class="active"
+        :class="{ 'active': route.path === item.path }"
       >
-        <span class="dock-icon">{{ item.icon }}</span>
-        <span class="dock-label">{{ item.label }}</span>
+        <div class="nav-icon-container">
+          <Icon :name="item.icon" :filled="route.path === item.path" />
+        </div>
+        <span class="nav-label">{{ item.label }}</span>
       </RouterLink>
     </nav>
   </div>
@@ -190,76 +194,70 @@ onMounted(async () => {
    FLOATING DOCK NAVIGATION
    ============================================================================ */
 
-.floating-dock {
+/* ============================================================================
+   NAVIGATION BAR (MD3 STANDARD)
+   ============================================================================ */
+
+.bottom-nav-bar {
   position: fixed;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 80px; /* Standard MD3 height */
+  background-color: var(--md-sys-color-surface-container);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
   z-index: 100;
-  
-  display: inline-flex;
-  gap: 6px;
-  padding: 8px;
-  
-  background-color: color-mix(in oklch, var(--md-sys-color-surface-container) 90%, transparent);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  
-  border-radius: var(--md-sys-shape-corner-full);
-  box-shadow: var(--md-sys-elevation-3);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
-.dock-item {
+.nav-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 10px 18px;
-  
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
   text-decoration: none;
   color: var(--md-sys-color-on-surface-variant);
-  
-  border-radius: var(--md-sys-shape-corner-full);
-  
-  transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.dock-item:active {
-  transform: scale(0.95);
+.nav-icon-container {
+  width: 64px;
+  height: 32px;
+  border-radius: 16px; /* Pill shape */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.dock-item-active {
-  background-color: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
+.nav-item.active .nav-icon-container {
+  background-color: var(--md-sys-color-secondary-container);
 }
 
-.dock-icon {
-  font-size: 1.25rem;
-  line-height: 1;
-  transition: transform var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-spring);
+.nav-item.active {
+  color: var(--md-sys-color-on-surface);
 }
 
-.dock-item-active .dock-icon {
-  transform: scale(1.1);
+.nav-item.active .icon {
+  color: var(--md-sys-color-on-secondary-container);
 }
 
-.dock-label {
-  font-size: 0.5rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.nav-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  transition: font-weight 0.2s ease;
 }
 
-/* Hide labels on very small screens */
-@media (max-width: 400px) {
-  .dock-label {
-    display: none;
-  }
-  
-  .dock-item {
-    padding: 12px 14px;
-  }
+.nav-item.active .nav-label {
+  font-weight: 700;
 }
 
 /* ============================================================================
