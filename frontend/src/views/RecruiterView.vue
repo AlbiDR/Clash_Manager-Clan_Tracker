@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { getLeaderboard, dismissRecruits } from '../api/gasClient'
 import type { Recruit } from '../types'
 import RecruitCard from '../components/RecruitCard.vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
+
+const route = useRoute()
 
 const recruits = ref<Recruit[]>([])
 const loading = ref(true)
@@ -34,6 +38,19 @@ async function loadData() {
     const response = await getLeaderboard()
     if (response.success && response.data) {
       recruits.value = response.data.hh || []
+      
+      // Handle Pin/Scroll-to
+      const pinId = route.query.pin as string
+      if (pinId && recruits.value.some(r => r.id === pinId)) {
+        expandedIds.value.add(pinId)
+        nextTick(() => {
+          const el = document.getElementById(`recruit-${pinId}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.classList.add('flash-highlight')
+          }
+        })
+      }
     } else {
       error.value = response.error?.message || 'Failed to load data'
     }
@@ -126,6 +143,8 @@ onMounted(loadData)
 
 <template>
   <div class="recruiter-view">
+    <PullToRefresh @refresh="loadData" :disabled="selectionMode" />
+
     <!-- Selection Mode Header -->
     <div v-if="selectionMode" class="selection-header">
       <div class="selection-info">
@@ -182,6 +201,7 @@ onMounted(loadData)
       <RecruitCard 
         v-for="recruit in sortedRecruits" 
         :key="recruit.id"
+        :id="`recruit-${recruit.id}`"
         :recruit="recruit"
         :selected="selectedIds.has(recruit.id)"
         :expanded="expandedIds.has(recruit.id)"

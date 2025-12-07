@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { getLeaderboard } from '../api/gasClient'
 import type { LeaderboardMember } from '../types'
 import MemberCard from '../components/MemberCard.vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
+const route = useRoute()
 
 const members = ref<LeaderboardMember[]>([])
 const loading = ref(true)
@@ -64,6 +67,19 @@ async function loadData() {
     const response = await getLeaderboard()
     if (response.success && response.data) {
       members.value = response.data.lb || []
+      
+      // Handle Pin/Scroll-to
+      const pinId = route.query.pin as string
+      if (pinId && members.value.some(m => m.id === pinId)) {
+        expandedIds.value.add(pinId)
+        nextTick(() => {
+          const el = document.getElementById(`member-${pinId}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.classList.add('flash-highlight')
+          }
+        })
+      }
     } else {
       error.value = response.error?.message || 'Failed to load data'
     }
@@ -79,7 +95,9 @@ onMounted(loadData)
 
 <template>
   <div class="leaderboard-view">
-    <!-- Header Stats -->
+    <PullToRefresh @refresh="loadData" />
+    
+    <!-- Header Controls -->
     <div class="stats-bar glass-card animate-fade-in">
       <div class="stat">
         <span class="stat-value">{{ stats.total }}</span>
@@ -159,6 +177,7 @@ onMounted(loadData)
       <MemberCard 
         v-for="(member, index) in filteredMembers" 
         :key="member.id"
+        :id="`member-${member.id}`"
         :member="member"
         :rank="index + 1"
         :expanded="expandedIds.has(member.id)"

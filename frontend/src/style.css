@@ -483,3 +483,69 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================================
+   ADVANCED ANIMATIONS
+   ============================================================================ */
+
+/* Flash Highlight Animation */
+@keyframes flash-highlight {
+
+  0%,
+  100% {
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  50% {
+    background-color: var(--md-sys-color-tertiary-container);
+  }
+}
+
+.flash-highlight {
+  animation: flash-highlight 1s ease-in-out 3;
+}
+
+/* Touch Ripple Effect */
+.btn-primary,
+.btn-secondary,
+.recruit-card,
+.member-card,
+.fab-btn,
+.chip-filter,
+.chip-sort {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after,
+.btn-secondary::after,
+.recruit-card::after,
+.member-card::after,
+.fab-btn::after,
+.chip-filter::after,
+.chip-sort::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.btn-primary:active::after,
+.btn-secondary:active::after,
+.recruit-card:active::after,
+.member-card:active::after,
+.fab-btn:active::after,
+.chip-filter:active::after,
+.chip-sort:active::after {
+  opacity: 0.12;
+}
+
+/* Specific overrides for cards */
+.recruit-card::after,
+.member-card::after {
+  border-radius: inherit;
+  background-color: var(--md-sys-color-on-surface);
+}
