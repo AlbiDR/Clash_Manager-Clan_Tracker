@@ -5,6 +5,8 @@ import { getLeaderboard } from '../api/gasClient'
 import type { LeaderboardMember } from '../types'
 import MemberCard from '../components/MemberCard.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
+import EmptyState from '../components/EmptyState.vue'
+import ErrorState from '../components/ErrorState.vue'
 const route = useRoute()
 
 const members = ref<LeaderboardMember[]>([])
@@ -147,30 +149,28 @@ onMounted(loadData)
     </div>
     
     <!-- Error State -->
-    <div v-if="error" class="error-state glass-card">
-      <span class="error-icon">⚠️</span>
-      <p>{{ error }}</p>
-      <button class="btn btn-primary" @click="loadData">Retry</button>
-    </div>
+    <ErrorState 
+      v-if="error" 
+      :message="error" 
+      @retry="loadData" 
+    />
     
     <!-- Loading State -->
-    <div v-else-if="loading" class="member-list stagger-children">
-      <div v-for="i in 8" :key="i" class="skeleton-card glass-card">
-        <div class="skeleton" style="width: 48px; height: 48px; border-radius: 50%;"></div>
-        <div class="skeleton-content">
-          <div class="skeleton" style="width: 60%; height: 1rem; margin-bottom: 0.5rem;"></div>
-          <div class="skeleton" style="width: 40%; height: 0.75rem;"></div>
-        </div>
-        <div class="skeleton" style="width: 60px; height: 2rem;"></div>
+    <div v-else-if="loading" class="member-list">
+      <div v-for="i in 5" :key="i" class="skeleton-card">
+        <div class="skeleton" style="width: 40px; height: 40px; border-radius: 50%;"></div>
+        <div class="skeleton" style="width: 120px; height: 20px;"></div>
+        <div class="skeleton" style="width: 60px; height: 20px; margin-left: auto;"></div>
       </div>
     </div>
     
     <!-- Empty State -->
-    <div v-else-if="filteredMembers.length === 0" class="empty-state glass-card">
-      <span class="empty-icon">🔍</span>
-      <p v-if="searchQuery">No members match "{{ searchQuery }}"</p>
-      <p v-else>No member data available</p>
-    </div>
+    <EmptyState 
+      v-else-if="filteredMembers.length === 0"
+      icon="🔍"
+      :message="searchQuery ? `No members match '${searchQuery}'` : 'No member data available'"
+      hint="Try adjusting your filters or search query"
+    />
     
     <!-- Member List -->
     <div v-else class="member-list stagger-children">

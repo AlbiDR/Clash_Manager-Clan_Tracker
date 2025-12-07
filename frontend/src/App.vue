@@ -64,7 +64,9 @@ onMounted(async () => {
     <main class="main-content">
       <RouterView v-slot="{ Component }">
         <Transition name="page" mode="out-in">
-          <component :is="Component" />
+          <KeepAlive>
+            <component :is="Component" />
+          </KeepAlive>
         </Transition>
       </RouterView>
     </main>

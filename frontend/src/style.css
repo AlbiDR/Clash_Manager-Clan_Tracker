@@ -549,3 +549,28 @@ body {
   border-radius: inherit;
   background-color: var(--md-sys-color-on-surface);
 }
+
+/* ============================================================================
+   TOOLTIP
+   ============================================================================ */
+
+.custom-tooltip {
+  position: fixed;
+  padding: 0.5rem 0.75rem;
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -10px) scale(0.9);
+  transition: all 0.2s var(--md-sys-motion-easing-emphasized);
+  z-index: 1000;
+  white-space: nowrap;
+}
+
+.custom-tooltip.visible {
+  opacity: 1;
+  transform: translate(-50%, -100%) scale(1);
+}

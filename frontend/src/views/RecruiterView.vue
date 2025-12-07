@@ -5,6 +5,8 @@ import { getLeaderboard, dismissRecruits } from '../api/gasClient'
 import type { Recruit } from '../types'
 import RecruitCard from '../components/RecruitCard.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
+import EmptyState from '../components/EmptyState.vue'
+import ErrorState from '../components/ErrorState.vue'
 
 const route = useRoute()
 
@@ -172,17 +174,23 @@ onMounted(loadData)
         <span class="stat-value">{{ stats.avgScore.toLocaleString() }}</span>
         <span class="stat-label">Avg Score</span>
       </div>
-      <button class="refresh-btn" @click="loadData" :disabled="loading">
+      <button 
+        class="refresh-btn" 
+        @click="loadData" 
+        :disabled="loading"
+        v-tooltip="'Refresh'"
+      >
         {{ loading ? '...' : '🔄' }}
       </button>
     </div>
     
     <!-- Error State -->
-    <div v-if="error" class="error-state">
-      <span class="error-icon">⚠️</span>
-      <p>{{ error }}</p>
-      <button class="btn-primary" @click="loadData">Retry</button>
-    </div>
+    <!-- Error State -->
+    <ErrorState 
+      v-if="error" 
+      :message="error" 
+      @retry="loadData" 
+    />
     
     <!-- Loading State -->
     <div v-else-if="loading" class="recruit-list">
@@ -192,11 +200,12 @@ onMounted(loadData)
     </div>
     
     <!-- Empty State -->
-    <div v-else-if="sortedRecruits.length === 0" class="empty-state">
-      <span class="empty-icon">🔭</span>
-      <p>No recruits found</p>
-      <p class="empty-hint">Run the scout in your spreadsheet to find new prospects</p>
-    </div>
+    <!-- Empty State -->
+    <EmptyState 
+      v-else-if="sortedRecruits.length === 0"
+      message="No recruits found"
+      hint="Run the scout in your spreadsheet to find new prospects"
+    />
     
     <!-- Recruit List -->
     <div v-else class="recruit-list">
