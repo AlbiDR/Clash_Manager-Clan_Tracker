@@ -19,8 +19,8 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: '/Clash_Manager-Clan_Tracker/',
+        start_url: '/Clash_Manager-Clan_Tracker/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -61,7 +61,7 @@ export default defineConfig({
       }
     })
   ],
-  base: './', // For GitHub Pages deployment
+  base: '/Clash_Manager-Clan_Tracker/', // For GitHub Pages deployment
   build: {
     outDir: 'dist',
     sourcemap: false
