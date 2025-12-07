@@ -61,6 +61,47 @@ async function gasRequest<T>(action: string, payload?: Record<string, unknown>):
     }
 }
 
+/**
+ * Stale-While-Revalidate Caching Wrapper
+ * Returns cached data immediately (if available) and triggers background fetch
+ */
+async function getSWR<T>(key: string, fetcher: () => Promise<T>, ttlMinutes = 5): Promise<T> {
+    const cacheKey = `gas_cache_${key}`
+    const cached = localStorage.getItem(cacheKey)
+
+    if (cached) {
+        try {
+            const { data, timestamp } = JSON.parse(cached)
+            const ageMinutes = (Date.now() - timestamp) / (1000 * 60)
+
+            // Background revalidation based on TTL
+            if (ageMinutes > ttlMinutes) {
+                fetcher().then(fresh => {
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        data: fresh,
+                        timestamp: Date.now()
+                    }))
+                    // Dispatch event for reactive updates (if needed)
+                    // For now, simpler SWR: just return cached, next load gets fresh
+                }).catch(e => console.warn('Background revalidation failed:', e))
+            }
+
+            return data as T
+        } catch (e) {
+            console.warn('Cache parse error:', e)
+            localStorage.removeItem(cacheKey)
+        }
+    }
+
+    // No cache or error, fetch fresh
+    const fresh = await fetcher()
+    localStorage.setItem(cacheKey, JSON.stringify({
+        data: fresh,
+        timestamp: Date.now()
+    }))
+    return fresh
+}
+
 // ============================================================================
 // API METHODS
 // ============================================================================
@@ -76,14 +117,14 @@ export async function ping(): Promise<ApiResponse<PingResponse>> {
  * Get leaderboard and recruiter data (cached on server)
  */
 export async function getLeaderboard(): Promise<LegacyApiResponse<WebAppData>> {
-    return gasRequest<LegacyApiResponse<WebAppData>>('getLeaderboard')
+    return getSWR('leaderboard', () => gasRequest<LegacyApiResponse<WebAppData>>('getLeaderboard'), 5)
 }
 
 /**
  * Get recruiter pool only
  */
 export async function getRecruits(): Promise<ApiResponse<{ hh: WebAppData['hh']; timestamp: number }>> {
-    return gasRequest<ApiResponse<{ hh: WebAppData['hh']; timestamp: number }>>('getRecruits')
+    return getSWR('recruits', () => gasRequest<ApiResponse<{ hh: WebAppData['hh']; timestamp: number }>>('getRecruits'), 5)
 }
 
 /**
@@ -104,7 +145,10 @@ export async function getWarLog(): Promise<ApiResponse<WarLogEntry[]>> {
  * Force refresh the cached data
  */
 export async function refresh(): Promise<LegacyApiResponse<WebAppData>> {
-    return gasRequest<LegacyApiResponse<WebAppData>>('refresh')
+    const data = await gasRequest<LegacyApiResponse<WebAppData>>('refresh')
+    // Update cache on manual refresh
+    localStorage.setItem('gas_cache_leaderboard', JSON.stringify({ data, timestamp: Date.now() }))
+    return data
 }
 
 /**

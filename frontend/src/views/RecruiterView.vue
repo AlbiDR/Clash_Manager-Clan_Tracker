@@ -66,8 +66,10 @@ function toggleSelect(id: string) {
     selectedIds.value.delete(id)
   } else {
     selectedIds.value.add(id)
+    // Auto-enter selection mode if not active
+    if (!selectionMode.value) selectionMode.value = true
   }
-  selectedIds.value = new Set(selectedIds.value)
+  selectedIds.value = new Set(selectedIds.value) // Trigger reactivity
   
   // Exit selection mode if nothing selected
   if (selectedIds.value.size === 0) {

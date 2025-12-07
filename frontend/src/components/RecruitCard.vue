@@ -36,10 +36,6 @@ const cardClasses = computed(() => [
   props.expanded ? 'recruit-card-expanded' : ''
 ].filter(Boolean).join(' '))
 
-const indicatorClasses = computed(() => 
-  props.selected ? 'selection-indicator active' : 'selection-indicator'
-)
-
 const chevronClasses = computed(() =>
   props.expanded ? 'chevron-btn chevron-open' : 'chevron-btn'
 )
@@ -55,12 +51,22 @@ function getScoreTone(score: number): string {
   return 'tone-low'
 }
 
-function handleClick() {
+const checkboxClasses = computed(() => 
+  props.selected ? 'selection-checkbox selected' : 'selection-checkbox'
+)
+
+function handleCardClick() {
+  // If clicking the checkbox/indicator directly or in selection mode, toggle select
   if (props.selectionMode) {
     emit('toggleSelect')
   } else {
     emit('toggleExpand')
   }
+}
+
+function handleSelectClick(e: Event) {
+  e.stopPropagation()
+  emit('toggleSelect')
 }
 
 function openInGame() {
@@ -75,11 +81,16 @@ function openRoyaleAPI() {
 <template>
   <div 
     :class="cardClasses"
-    @click="handleClick"
+    @click="handleCardClick"
   >
-    <!-- Selection Indicator -->
-    <div v-if="selectionMode" :class="indicatorClasses">
-      <span v-if="selected">✓</span>
+    <!-- Explicit Selection Indicator/Checkbox -->
+    <div 
+      :class="checkboxClasses" 
+      @click="handleSelectClick"
+    >
+      <transition name="scale">
+        <span v-if="selected" class="check-mark">✓</span>
+      </transition>
     </div>
     
     <!-- Main Row -->
@@ -154,11 +165,11 @@ function openRoyaleAPI() {
   background: var(--md-sys-color-surface-container, #f3f3f3);
   border-radius: 1.25rem;
   padding: 1rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  display: flex;
-  flex-direction: column;
+  padding-left: 3.5rem; /* Space for checkbox */
   position: relative;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  border: 1px solid transparent; /* Prevent jump on selection */
+  user-select: none;
 }
 
 .recruit-card:active {
@@ -167,6 +178,7 @@ function openRoyaleAPI() {
 
 .recruit-card-selected {
   background: var(--md-sys-color-secondary-container, #e8def8);
+  border-color: var(--md-sys-color-primary, #6750a4);
 }
 
 .recruit-card-expanded {
@@ -175,25 +187,42 @@ function openRoyaleAPI() {
 }
 
 /* Selection Indicator */
-.selection-indicator {
+.selection-checkbox {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 2px solid var(--md-sys-color-outline, #79747e);
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  border: 2px solid var(--md-sys-color-outline, #79747e);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  color: white;
+  z-index: 2;
   transition: all 0.2s ease;
+  background: transparent;
 }
 
-.selection-indicator.active {
+.selection-checkbox.selected {
   background: var(--md-sys-color-primary, #6750a4);
   border-color: var(--md-sys-color-primary, #6750a4);
+}
+
+.check-mark {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.scale-enter-active,
+.scale-leave-active {
+  transition: transform 0.2s ease;
+}
+
+.scale-enter-from,
+.scale-leave-to {
+  transform: scale(0);
 }
 
 /* Header Layout */
