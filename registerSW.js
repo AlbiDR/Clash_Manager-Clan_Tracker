@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Clash_Manager-Clan_Tracker/sw.js', { scope: '/Clash_Manager-Clan_Tracker/' })})}
