@@ -17,78 +17,68 @@
    ============================================================================ */
 
 :root {
-  /* ===== Primary Palette ===== */
-  --md-sys-color-primary: oklch(50% 0.2 270);
-  --md-sys-color-on-primary: oklch(100% 0 0);
-  --md-sys-color-primary-container: oklch(90% 0.06 270);
-  --md-sys-color-on-primary-container: oklch(20% 0.15 270);
+  /* ===== Official M3 Baseline: Purple (Seed: #6750A4) ===== */
 
-  /* ===== Secondary Palette ===== */
-  --md-sys-color-secondary: oklch(45% 0.08 280);
-  --md-sys-color-on-secondary: oklch(100% 0 0);
-  --md-sys-color-secondary-container: oklch(92% 0.04 280);
-  --md-sys-color-on-secondary-container: oklch(20% 0.08 280);
+  /* Primary */
+  --md-sys-color-primary: #65558F;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #EADDFF;
+  --md-sys-color-on-primary-container: #21005D;
 
-  /* ===== Tertiary Palette (Gold Accent) ===== */
-  --md-sys-color-tertiary: oklch(55% 0.15 85);
-  --md-sys-color-on-tertiary: oklch(100% 0 0);
-  --md-sys-color-tertiary-container: oklch(92% 0.08 85);
-  --md-sys-color-on-tertiary-container: oklch(25% 0.12 85);
+  /* Secondary */
+  --md-sys-color-secondary: #625B71;
+  --md-sys-color-on-secondary: #FFFFFF;
+  --md-sys-color-secondary-container: #E8DEF8;
+  --md-sys-color-on-secondary-container: #1D192B;
 
-  /* ===== Error Palette ===== */
-  --md-sys-color-error: oklch(50% 0.2 25);
-  --md-sys-color-on-error: oklch(100% 0 0);
-  --md-sys-color-error-container: oklch(92% 0.08 25);
-  --md-sys-color-on-error-container: oklch(25% 0.15 25);
+  /* Tertiary */
+  --md-sys-color-tertiary: #7D5260;
+  --md-sys-color-on-tertiary: #FFFFFF;
+  --md-sys-color-tertiary-container: #FFD8E4;
+  --md-sys-color-on-tertiary-container: #31111D;
 
-  /* ===== Success (Custom) ===== */
-  --md-sys-color-success: oklch(55% 0.15 145);
-  --md-sys-color-success-container: oklch(92% 0.06 145);
+  /* Error */
+  --md-sys-color-error: #B3261E;
+  --md-sys-color-on-error: #FFFFFF;
+  --md-sys-color-error-container: #F9DEDC;
+  --md-sys-color-on-error-container: #410E0B;
 
-  /* ===== Surface & Background ===== */
-  --md-sys-color-background: oklch(99% 0.005 270);
-  --md-sys-color-on-background: oklch(15% 0.02 270);
-  --md-sys-color-surface: oklch(99% 0.005 270);
-  --md-sys-color-on-surface: oklch(15% 0.02 270);
+  /* Neutral / Background / Surface */
+  --md-sys-color-background: #FEF7FF;
+  --md-sys-color-on-background: #1D1B20;
+  --md-sys-color-surface: #FEF7FF;
+  --md-sys-color-on-surface: #1D1B20;
 
-  /* ===== Surface Containers (Tonal Elevation) ===== */
-  --md-sys-color-surface-dim: oklch(92% 0.01 270);
-  --md-sys-color-surface-bright: oklch(99% 0.005 270);
-  --md-sys-color-surface-container-lowest: oklch(100% 0 0);
-  --md-sys-color-surface-container-low: oklch(97% 0.008 270);
-  --md-sys-color-surface-container: oklch(95% 0.01 270);
-  --md-sys-color-surface-container-high: oklch(92% 0.015 270);
-  --md-sys-color-surface-container-highest: oklch(90% 0.02 270);
+  /* Surface Variants */
+  --md-sys-color-surface-variant: #E7E0EC;
+  --md-sys-color-on-surface-variant: #49454F;
+  --md-sys-color-outline: #79747E;
+  --md-sys-color-outline-variant: #CAC4D0;
 
-  /* ===== Outline & Dividers ===== */
-  --md-sys-color-outline: oklch(55% 0.02 270);
-  --md-sys-color-outline-variant: oklch(80% 0.02 270);
-  --md-sys-color-surface-variant: oklch(90% 0.03 270);
-  --md-sys-color-on-surface-variant: oklch(35% 0.03 270);
+  /* Surface Container (Tonal Elevation) */
+  --md-sys-color-surface-container-lowest: #FFFFFF;
+  --md-sys-color-surface-container-low: #F7F2FA;
+  --md-sys-color-surface-container: #F3EDF7;
+  --md-sys-color-surface-container-high: #ECE6F0;
+  --md-sys-color-surface-container-highest: #E6E0E9;
 
-  /* ===== Fixed Colors ===== */
-  --md-sys-color-scrim: oklch(0% 0 0);
-  --md-sys-color-shadow: oklch(0% 0 0);
+  /* Inverse */
+  --md-sys-color-inverse-surface: #322F35;
+  --md-sys-color-inverse-on-surface: #F5EFF7;
+  --md-sys-color-inverse-primary: #D0BCFF;
 
-  /* ===== Motion Tokens ===== */
+  /* Scrim / Shadow */
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-shadow: #000000;
+
+  /* ===== Motion ===== */
   --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
-  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
-  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-  --md-sys-motion-easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  --md-sys-motion-duration-short1: 50ms;
-  --md-sys-motion-duration-short2: 100ms;
-  --md-sys-motion-duration-short3: 150ms;
   --md-sys-motion-duration-short4: 200ms;
-  --md-sys-motion-duration-medium1: 250ms;
   --md-sys-motion-duration-medium2: 300ms;
-  --md-sys-motion-duration-medium3: 350ms;
-  --md-sys-motion-duration-medium4: 400ms;
-  --md-sys-motion-duration-long1: 450ms;
   --md-sys-motion-duration-long2: 500ms;
 
-  /* ===== Shape Tokens ===== */
+  /* ===== Shape (Strict M3) ===== */
   --md-sys-shape-corner-none: 0;
   --md-sys-shape-corner-extra-small: 4px;
   --md-sys-shape-corner-small: 8px;
@@ -99,76 +89,69 @@
 
   /* ===== Elevation (Tonal) ===== */
   --md-sys-elevation-0: none;
-  --md-sys-elevation-1: 0 1px 2px oklch(0% 0 0 / 0.1), 0 1px 3px 1px oklch(0% 0 0 / 0.05);
-  --md-sys-elevation-2: 0 1px 2px oklch(0% 0 0 / 0.1), 0 2px 6px 2px oklch(0% 0 0 / 0.08);
-  --md-sys-elevation-3: 0 1px 3px oklch(0% 0 0 / 0.1), 0 4px 8px 3px oklch(0% 0 0 / 0.1);
-  --md-sys-elevation-4: 0 2px 3px oklch(0% 0 0 / 0.1), 0 6px 10px 4px oklch(0% 0 0 / 0.12);
-  --md-sys-elevation-5: 0 4px 4px oklch(0% 0 0 / 0.1), 0 8px 12px 6px oklch(0% 0 0 / 0.15);
+  --md-sys-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  /* Fallback to shadow if mix-blend fails, but M3 uses tonal surface mostly */
+  --md-sys-elevation-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-3: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
 
-  /* ===== Typography ===== */
-  --md-sys-typescale-body-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --md-sys-typescale-mono-font: 'SF Mono', 'Roboto Mono', 'Consolas', monospace;
+  /* ===== Typography (Roboto) ===== */
+  --md-sys-typescale-body-font: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* ===== Layout ===== */
-  --md-sys-layout-nav-height: 4rem;
-  --md-sys-layout-dock-height: 4.5rem;
+  /* ===== Layout (Strict) ===== */
+  --md-sys-layout-nav-height: 80px;
+  /* Official M3 Standard */
+  --md-sys-layout-app-bar-height: 64px;
+  /* Official M3 Standard */
   --md-sys-layout-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ============================================================================
-   DESIGN TOKENS - DARK MODE
-   ============================================================================ */
-
 @media (prefers-color-scheme: dark) {
   :root {
-    /* ===== Primary (Lighter tones for dark) ===== */
-    --md-sys-color-primary: oklch(80% 0.15 270);
-    --md-sys-color-on-primary: oklch(25% 0.15 270);
-    --md-sys-color-primary-container: oklch(35% 0.15 270);
-    --md-sys-color-on-primary-container: oklch(90% 0.08 270);
+    /* M3 Dark Baseline */
 
-    /* ===== Secondary ===== */
-    --md-sys-color-secondary: oklch(78% 0.06 280);
-    --md-sys-color-on-secondary: oklch(25% 0.06 280);
-    --md-sys-color-secondary-container: oklch(35% 0.06 280);
-    --md-sys-color-on-secondary-container: oklch(90% 0.04 280);
+    /* Primary */
+    --md-sys-color-primary: #D0BCFF;
+    --md-sys-color-on-primary: #381E72;
+    --md-sys-color-primary-container: #4F378B;
+    --md-sys-color-on-primary-container: #EADDFF;
 
-    /* ===== Tertiary ===== */
-    --md-sys-color-tertiary: oklch(75% 0.12 85);
-    --md-sys-color-on-tertiary: oklch(25% 0.1 85);
-    --md-sys-color-tertiary-container: oklch(35% 0.1 85);
-    --md-sys-color-on-tertiary-container: oklch(90% 0.06 85);
+    /* Secondary */
+    --md-sys-color-secondary: #CCC2DC;
+    --md-sys-color-on-secondary: #332D41;
+    --md-sys-color-secondary-container: #4A4458;
+    --md-sys-color-on-secondary-container: #E8DEF8;
 
-    /* ===== Error ===== */
-    --md-sys-color-error: oklch(75% 0.15 25);
-    --md-sys-color-on-error: oklch(25% 0.15 25);
-    --md-sys-color-error-container: oklch(30% 0.12 25);
-    --md-sys-color-on-error-container: oklch(90% 0.08 25);
+    /* Tertiary */
+    --md-sys-color-tertiary: #EFB8C8;
+    --md-sys-color-on-tertiary: #492532;
+    --md-sys-color-tertiary-container: #633B48;
+    --md-sys-color-on-tertiary-container: #FFD8E4;
 
-    /* ===== Success ===== */
-    --md-sys-color-success: oklch(70% 0.12 145);
-    --md-sys-color-success-container: oklch(30% 0.1 145);
+    /* Error */
+    --md-sys-color-error: #F2B8B5;
+    --md-sys-color-on-error: #601410;
+    --md-sys-color-error-container: #8C1D18;
+    --md-sys-color-on-error-container: #F9DEDC;
 
-    /* ===== Background & Surface ===== */
-    --md-sys-color-background: oklch(12% 0.015 270);
-    --md-sys-color-on-background: oklch(90% 0.01 270);
-    --md-sys-color-surface: oklch(12% 0.015 270);
-    --md-sys-color-on-surface: oklch(90% 0.01 270);
+    /* Surface */
+    --md-sys-color-background: #141218;
+    --md-sys-color-on-background: #E6E1E5;
+    --md-sys-color-surface: #141218;
+    --md-sys-color-on-surface: #E6E1E5;
 
-    /* ===== Surface Containers ===== */
-    --md-sys-color-surface-dim: oklch(8% 0.01 270);
-    --md-sys-color-surface-bright: oklch(25% 0.02 270);
-    --md-sys-color-surface-container-lowest: oklch(6% 0.01 270);
-    --md-sys-color-surface-container-low: oklch(15% 0.015 270);
-    --md-sys-color-surface-container: oklch(18% 0.02 270);
-    --md-sys-color-surface-container-high: oklch(22% 0.025 270);
-    --md-sys-color-surface-container-highest: oklch(27% 0.03 270);
+    /* Surface Variants */
+    --md-sys-color-surface-variant: #49454F;
+    --md-sys-color-on-surface-variant: #CAC4D0;
+    --md-sys-color-outline: #938F99;
+    --md-sys-color-outline-variant: #49454F;
+    /* Darker in dark mode */
 
-    /* ===== Outline ===== */
-    --md-sys-color-outline: oklch(55% 0.02 270);
-    --md-sys-color-outline-variant: oklch(35% 0.02 270);
-    --md-sys-color-surface-variant: oklch(30% 0.03 270);
-    --md-sys-color-on-surface-variant: oklch(75% 0.02 270);
+    /* Surface Containers */
+    --md-sys-color-surface-container-lowest: #0F0D13;
+    --md-sys-color-surface-container-low: #1D1B20;
+    --md-sys-color-surface-container: #211F26;
+    --md-sys-color-surface-container-high: #2B2930;
+    --md-sys-color-surface-container-highest: #36343B;
   }
 }
 
