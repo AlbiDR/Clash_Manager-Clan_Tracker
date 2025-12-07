@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { LeaderboardMember } from '../types'
-import WarHistoryChart from './WarHistoryChart.vue'
 import Icon from './Icon.vue'
-import { computed } from 'vue'
+import WarHistoryChart from './WarHistoryChart.vue'
 
 const props = defineProps<{
   member: LeaderboardMember
@@ -38,18 +37,6 @@ function getScoreTone(score: number): string {
   return 'tone-low'
 }
 
-function openInGame() {
-  window.open(`clashroyale://playerInfo?id=${props.member.id}`, '_blank')
-}
-
-function openRoyaleAPI() {
-  window.open(`https://royaleapi.com/player/${props.member.id}`, '_blank')
-}
-
-const checkboxClasses = computed(() => 
-  props.selected ? 'selection-checkbox selected' : 'selection-checkbox'
-)
-
 function handleCardClick() {
   if (props.selectionMode) {
     emit('toggleSelect')
@@ -58,9 +45,21 @@ function handleCardClick() {
   }
 }
 
-function handleSelectClick(e: Event) {
-  e.stopPropagation()
-  emit('toggleSelect')
+// Long press for selection
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+
+function startLongPress() {
+  if (props.selectionMode) return
+  longPressTimer = setTimeout(() => {
+    emit('toggleSelect')
+  }, 500)
+}
+
+function cancelLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
 }
 </script>
 
@@ -72,24 +71,37 @@ function handleSelectClick(e: Event) {
       'member-card-selected': selected 
     }"
     @click="handleCardClick"
+    @mousedown="startLongPress"
+    @touchstart="startLongPress"
+    @mouseup="cancelLongPress"
+    @touchend="cancelLongPress"
+    @mouseleave="cancelLongPress"
   >
-    <!-- Explicit Selection Indicator/Checkbox -->
-    <div 
-      :class="checkboxClasses" 
-      @click="handleSelectClick"
-    >
-      <transition name="scale">
-        <Icon v-if="selected" name="check" size="14" class="check-mark" />
-      </transition>
-    </div>
     <!-- Main Row -->
     <div class="card-header">
-      <!-- Rank Badge -->
-      <div class="rank" :class="{ 'rank-top': rank <= 3 }">
-        <span v-if="rank === 1">🥇</span>
-        <span v-else-if="rank === 2">🥈</span>
-        <span v-else-if="rank === 3">🥉</span>
-        <span v-else>{{ rank }}</span>
+      <!-- LEADING ELEMENT: RANK or CHECKBOX (Avatar Swap) -->
+      <div class="leading-container">
+        <transition name="swap-rotate" mode="out-in">
+          <div 
+            v-if="selected || selectionMode" 
+            class="avatar-checkbox" 
+            :class="{ 'checked': selected }"
+            key="checkbox"
+          >
+            <Icon name="check" size="16" class="check-icon" />
+          </div>
+          <div 
+            v-else 
+            class="rank-avatar" 
+            :class="{ 'rank-top': rank <= 3 }"
+            key="rank"
+          >
+            <span v-if="rank === 1">🥇</span>
+            <span v-else-if="rank === 2">🥈</span>
+            <span v-else-if="rank === 3">🥉</span>
+            <span v-else>{{ rank }}</span>
+          </div>
+        </transition>
       </div>
       
       <!-- Member Info -->
@@ -107,15 +119,15 @@ function handleSelectClick(e: Event) {
         
         <div class="member-stats">
           <span class="stat-item">
-            <Icon name="trophy" size="12" class="stat-icon" />
+            <Icon name="trophy" size="14" class="stat-icon" />
             {{ member.t.toLocaleString() }}
           </span>
           <span class="stat-item">
-            <Icon name="warlog" size="12" class="stat-icon" />
+            <Icon name="warlog" size="14" class="stat-icon" />
             {{ member.d.rate }}
           </span>
           <span class="stat-item" v-if="member.d.days > 0">
-            <span class="stat-icon">📅</span> <!-- Calendar icon not in set, keep emoji or add? 'donation' is similar visual weight -->
+            <Icon name="donation" size="14" class="stat-icon" />
             {{ member.d.days }}d
           </span>
         </div>
@@ -127,41 +139,24 @@ function handleSelectClick(e: Event) {
           <span class="stat-score">{{ Math.round(member.s) }}</span>
           <span class="stat-sub">SCORE</span>
         </div>
-        <div class="chevron-btn" :class="{ 'chevron-open': expanded }">
-          <Icon name="expand" size="20" />
-        </div>
       </div>
     </div>
     
     <!-- Expanded Details -->
     <div class="card-body" :class="{ 'card-body-open': expanded }">
-      <!-- Grid Stats -->
-      <div class="grid-stats">
-        <div class="stat-box">
-          <span class="stat-box-label">Avg/Day</span>
-          <span class="stat-box-value">{{ member.d.avg }}</span>
+      <div class="expanded-content">
+        <WarHistoryChart :history="member.d.hist" />
+        
+        <div class="detail-row">
+           <div class="detail-item">
+             <span class="label">Donations</span>
+             <span class="value">{{ member.d.avg }} avg</span>
+           </div>
+           <div class="detail-item">
+             <span class="label">Last Seen</span>
+             <span class="value">{{ member.d.seen }}</span>
+           </div>
         </div>
-        <div class="stat-box">
-          <span class="stat-box-label">War Rate</span>
-          <span class="stat-box-value">{{ member.d.rate }}</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-box-label">Last Seen</span>
-          <span class="stat-box-value">{{ member.d.seen }}</span>
-        </div>
-      </div>
-      
-      <!-- War History Chart -->
-      <WarHistoryChart :history="member.d.hist" />
-      
-      <!-- Action Buttons -->
-      <div class="btn-row">
-        <button class="btn-action btn-secondary" @click.stop="openRoyaleAPI">
-          RoyaleAPI
-        </button>
-        <button class="btn-action btn-primary" @click.stop="openInGame">
-          Open in Game
-        </button>
       </div>
     </div>
   </div>
@@ -169,87 +164,47 @@ function handleSelectClick(e: Event) {
 
 <style scoped>
 .member-card {
-  background: var(--md-sys-color-surface-container, #f3f3f3);
+  background: var(--md-sys-color-surface-container);
   border-radius: var(--md-sys-shape-corner-large);
-  padding: 1rem;
-  padding-left: 3.5rem; /* Space for checkbox */
+  padding: 0.75rem 1rem;
   position: relative;
   transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
-  border: 1px solid transparent; /* Prevent jump */
-  cursor: pointer;
+  border: 1px solid transparent;
+  width: 100%;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .member-card:active {
-  transform: scale(0.98);
+  background: var(--md-sys-color-surface-container-high);
 }
 
 .member-card-selected {
   background: var(--md-sys-color-secondary-container);
-  border-color: var(--md-sys-color-primary);
+  border: 1px solid var(--md-sys-color-primary);
 }
 
-.member-card-expanded {
-  background: var(--md-sys-color-surface-container-high);
-  box-shadow: var(--md-sys-elevation-2);
-}
-
-/* Duplicated selection styles for parity with RecruitCard */
-.selection-checkbox {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid var(--md-sys-color-outline);
+/* Leading Container (Avatar Swap) */
+.leading-container {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
-  transition: all 0.2s ease;
-  background: transparent;
-}
-
-.selection-checkbox.selected {
-  background: var(--md-sys-color-primary);
-  border-color: var(--md-sys-color-primary);
-}
-
-.check-mark {
-  color: var(--md-sys-color-on-primary);
-}
-
-.scale-enter-active,
-.scale-leave-active {
-  transition: transform 0.2s ease;
-}
-
-.scale-enter-from,
-.scale-leave-to {
-  transform: scale(0);
-}
-
-/* Header Layout */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-/* Rank */
-.rank {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--md-sys-color-surface-variant, #e0e0e0);
-  border-radius: 50%;
-  font-weight: 700;
-  font-size: 0.875rem;
-  color: var(--md-sys-color-on-surface-variant, #49454f);
   flex-shrink: 0;
+}
+
+.rank-avatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: 50%;
+  font-size: 0.875rem;
 }
 
 .rank-top {
@@ -257,228 +212,169 @@ function handleSelectClick(e: Event) {
   font-size: 1.5rem;
 }
 
-/* Member Info */
+.avatar-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  border: 2px solid var(--md-sys-color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-checkbox.checked {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.check-icon {
+  color: var(--md-sys-color-on-primary);
+}
+
+/* Swap Transition */
+.swap-rotate-enter-active,
+.swap-rotate-leave-active {
+  transition: all 0.2s var(--md-sys-motion-easing-standard);
+}
+
+.swap-rotate-enter-from {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+}
+
+.swap-rotate-leave-to {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+
+/* Layout */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .member-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
 .member-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.25rem;
 }
 
 .member-name {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 1rem;
+  color: var(--md-sys-color-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--md-sys-color-on-surface, #1c1b1f);
 }
 
-/* Role Badges */
 .badge {
   font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.5rem;
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
-.badge-leader {
-  background: var(--md-sys-color-primary-container, #eaddff);
-  color: var(--md-sys-color-on-primary-container, #21005e);
-}
+.badge-leader { background: #FFD700; color: #000; }
+.badge-co-leader { background: #C0C0C0; color: #000; }
+.badge-elder { background: #cd7f32; color: #fff; }
 
-.badge-co-leader {
-  background: var(--md-sys-color-secondary-container, #e8def8);
-  color: var(--md-sys-color-on-secondary-container, #1e192b);
-}
-
-.badge-elder {
-  background: var(--md-sys-color-tertiary-container, #ffd8e4);
-  color: var(--md-sys-color-on-tertiary-container, #31111d);
-}
-
-.badge-member {
-  display: none;
-}
-
-/* Stats Row */
 .member-stats {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
-  flex-wrap: wrap;
+  color: var(--md-sys-color-outline);
+  font-size: 0.75rem;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.75rem;
-  color: var(--md-sys-color-outline, #79747e);
 }
 
 .stat-icon {
-  font-size: 0.625rem;
-}
-
-/* Action Area */
-.action-area {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  color: var(--md-sys-color-outline);
 }
 
 /* Score Pod */
 .stat-pod {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 1rem;
-  flex-shrink: 0;
 }
 
 .tone-high {
-  background: var(--md-sys-color-primary-container, #eaddff);
-  color: var(--md-sys-color-on-primary-container, #21005e);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
 }
-
 .tone-mid {
-  background: var(--md-sys-color-secondary-container, #e8def8);
-  color: var(--md-sys-color-on-secondary-container, #1e192b);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
 }
-
 .tone-low {
-  background: var(--md-sys-color-surface-variant, #e7e0ec);
-  color: var(--md-sys-color-on-surface-variant, #49454f);
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .stat-score {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
-  font-family: system-ui, sans-serif;
 }
 
 .stat-sub {
-  font-size: 0.5rem;
+  font-size: 0.45rem;
   font-weight: 700;
-  opacity: 0.7;
-  margin-top: 2px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  opacity: 0.8;
+  margin-top: 1px;
 }
 
-/* Chevron */
-.chevron-btn {
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--md-sys-color-on-surface-variant, #49454f);
-  opacity: 0.5;
-  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
-}
-
-.chevron-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.chevron-open {
-  transform: rotate(180deg);
-  opacity: 1;
-}
-
-/* Expanded Body */
+/* Expanded */
 .card-body {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s var(--md-sys-motion-easing-emphasized);
 }
 
 .card-body-open {
-  max-height: 400px;
-  opacity: 1;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--md-sys-color-outline-variant, #cac4d0);
+  grid-template-rows: 1fr;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
 
-/* Grid Stats */
-.grid-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+.expanded-content {
+  overflow: hidden;
 }
 
-.stat-box {
-  background: var(--md-sys-color-surface-container, #f3f3f3);
-  padding: 0.75rem 0.5rem;
-  border-radius: 0.75rem;
-  text-align: center;
-}
-
-.stat-box-label {
-  display: block;
-  font-size: 0.625rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--md-sys-color-outline, #79747e);
-  margin-bottom: 0.25rem;
-}
-
-.stat-box-value {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--md-sys-color-on-surface, #1c1b1f);
-}
-
-/* Action Buttons */
-.btn-row {
+.detail-row {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
 
-.btn-action {
-  flex: 1;
-  padding: 0.875rem 1rem;
-  border: none;
-  border-radius: 1.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+.detail-item {
+  display: flex;
+  flex-direction: column;
 }
 
-.btn-action:active {
-  transform: scale(0.97);
-}
-
-.btn-primary {
-  background: var(--md-sys-color-primary, #6750a4);
-  color: var(--md-sys-color-on-primary, #ffffff);
-}
-
-.btn-secondary {
-  background: var(--md-sys-color-secondary-container, #e8def8);
-  color: var(--md-sys-color-on-secondary-container, #1e192b);
-}
+.label { font-size: 0.75rem; color: var(--md-sys-color-outline); }
+.value { font-size: 0.875rem; color: var(--md-sys-color-on-surface); font-weight: 500; }
 </style>

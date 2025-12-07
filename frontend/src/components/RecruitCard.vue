@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from './Icon.vue'
 import { computed } from 'vue'
 import type { Recruit } from '../types'
 
@@ -29,21 +30,6 @@ const timeAgo = computed(() => {
   return `${Math.floor(diffDays / 7)}w ago`
 })
 
-// Computed classes to avoid template object parsing issues
-const cardClasses = computed(() => [
-  'recruit-card',
-  props.selected ? 'recruit-card-selected' : '',
-  props.expanded ? 'recruit-card-expanded' : ''
-].filter(Boolean).join(' '))
-
-const chevronClasses = computed(() =>
-  props.expanded ? 'chevron-btn chevron-open' : 'chevron-btn'
-)
-
-const bodyClasses = computed(() =>
-  props.expanded ? 'card-body card-body-open' : 'card-body'
-)
-
 // Tonal color class based on score
 function getScoreTone(score: number): string {
   if (score >= 80) return 'tone-high'
@@ -51,12 +37,7 @@ function getScoreTone(score: number): string {
   return 'tone-low'
 }
 
-const checkboxClasses = computed(() => 
-  props.selected ? 'selection-checkbox selected' : 'selection-checkbox'
-)
-
 function handleCardClick() {
-  // If clicking the checkbox/indicator directly or in selection mode, toggle select
   if (props.selectionMode) {
     emit('toggleSelect')
   } else {
@@ -64,9 +45,21 @@ function handleCardClick() {
   }
 }
 
-function handleSelectClick(e: Event) {
-  e.stopPropagation()
-  emit('toggleSelect')
+// Long press logic
+let longPressTimer: number | null = null
+
+function startLongPress() {
+  if (props.selectionMode) return
+  longPressTimer = setTimeout(() => {
+    emit('toggleSelect')
+  }, 500) as unknown as number
+}
+
+function cancelLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
 }
 
 function openInGame() {
@@ -80,22 +73,43 @@ function openRoyaleAPI() {
 
 <template>
   <div 
-    :class="cardClasses"
+    class="recruit-card"
+    :class="{ 
+      'recruit-card-expanded': expanded,
+      'recruit-card-selected': selected 
+    }"
     @click="handleCardClick"
+    @mousedown="startLongPress"
+    @touchstart="startLongPress"
+    @mouseup="cancelLongPress"
+    @touchend="cancelLongPress"
+    @mouseleave="cancelLongPress"
   >
-    <!-- Explicit Selection Indicator/Checkbox -->
-    <div 
-      :class="checkboxClasses" 
-      @click="handleSelectClick"
-    >
-      <transition name="scale">
-        <span v-if="selected" class="check-mark">✓</span>
-      </transition>
-    </div>
     
-    <!-- Main Row -->
+    <!-- Header -->
     <div class="card-header">
-      <!-- Member Info -->
+       <!-- LEADING ELEMENT: RECRUIT ICON SWAP -->
+       <div class="leading-container">
+        <transition name="swap-rotate" mode="out-in">
+          <div 
+            v-if="selected || selectionMode" 
+            class="avatar-checkbox" 
+            :class="{ 'checked': selected }"
+            key="checkbox"
+          >
+            <Icon name="check" size="16" class="check-icon" />
+          </div>
+          <div 
+            v-else 
+            class="recruit-avatar" 
+            key="avatar"
+          >
+            <Icon name="telescope" size="18" />
+          </div>
+        </transition>
+      </div>
+
+      <!-- Info -->
       <div class="recruit-info">
         <div class="recruit-header">
           <span class="recruit-name">{{ recruit.n }}</span>
@@ -103,58 +117,57 @@ function openRoyaleAPI() {
         
         <div class="recruit-stats">
           <span class="stat-item">
-            <span class="stat-icon">🏆</span>
+            <Icon name="trophy" size="14" class="stat-icon" />
             {{ recruit.t.toLocaleString() }}
           </span>
           <span class="stat-item">
-            <span class="stat-icon">🎁</span>
+            <Icon name="donation" size="14" class="stat-icon" />
             {{ recruit.d.don.toLocaleString() }}
           </span>
           <span class="stat-item">
-            <span class="stat-icon">⚔️</span>
+            <Icon name="warlog" size="14" class="stat-icon" />
             {{ recruit.d.war }}
           </span>
         </div>
       </div>
       
-      <!-- Score Pod + Chevron -->
+      <!-- Score Pod -->
       <div class="action-area">
         <div class="stat-pod" :class="getScoreTone(recruit.s)">
           <span class="stat-score">{{ Math.round(recruit.s) }}</span>
           <span class="stat-sub">SCORE</span>
         </div>
-        <div :class="chevronClasses">
-          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
       </div>
     </div>
     
-    <!-- Expanded Details -->
-    <div :class="bodyClasses">
-      <!-- Grid Stats -->
-      <div class="grid-stats">
-        <div class="stat-box">
-          <span class="stat-box-label">Found</span>
-          <span class="stat-box-value">{{ timeAgo }}</span>
+    <!-- Expanded Body -->
+    <div class="card-body" :class="{ 'card-body-open': expanded }">
+      <div class="expanded-content">
+        <!-- Grid Stats -->
+        <div class="grid-stats">
+          <div class="stat-box">
+            <span class="stat-box-label">Found</span>
+            <span class="stat-box-value">{{ timeAgo }}</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-box-label">Cards Won</span>
+            <span class="stat-box-value">{{ recruit.d.cards || '-' }}</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-box-label">War Wins</span>
+            <span class="stat-box-value">{{ recruit.d.war }}</span>
+          </div>
         </div>
-        <div class="stat-box">
-          <span class="stat-box-label">Cards Won</span>
-          <span class="stat-box-value">{{ recruit.d.cards || '-' }}</span>
+        
+        <!-- Action Buttons -->
+        <div class="btn-row">
+          <button class="btn-action btn-secondary" @click.stop="openRoyaleAPI">
+            RoyaleAPI
+          </button>
+          <button class="btn-action btn-primary" @click.stop="openInGame">
+            Open in Game
+          </button>
         </div>
-        <div class="stat-box">
-          <span class="stat-box-label">War Wins</span>
-          <span class="stat-box-value">{{ recruit.d.war }}</span>
-        </div>
-      </div>
-      
-      <!-- Action Buttons -->
-      <div class="btn-row">
-        <button class="btn-action btn-secondary" @click.stop="openRoyaleAPI">
-          RoyaleAPI
-        </button>
-        <button class="btn-action btn-primary" @click.stop="openInGame">
-          Open in Game
-        </button>
       </div>
     </div>
   </div>
@@ -162,10 +175,9 @@ function openRoyaleAPI() {
 
 <style scoped>
 .recruit-card {
-  background: var(--md-sys-color-surface-container, #f3f3f3);
-  border-radius: 1.25rem;
-  padding: 1rem;
-  padding-left: 3.5rem; /* Space for checkbox */
+  background: var(--md-sys-color-surface-container);
+  border-radius: var(--md-sys-shape-corner-large);
+  padding: 0.75rem 1rem;
   position: relative;
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   border: 1px solid transparent; /* Prevent jump on selection */
@@ -173,82 +185,99 @@ function openRoyaleAPI() {
 }
 
 .recruit-card:active {
-  transform: scale(0.98);
+  background: var(--md-sys-color-surface-container-high);
 }
 
 .recruit-card-selected {
-  background: var(--md-sys-color-secondary-container, #e8def8);
-  border-color: var(--md-sys-color-primary, #6750a4);
+  background: var(--md-sys-color-secondary-container);
+  border-color: var(--md-sys-color-primary);
 }
 
 .recruit-card-expanded {
-  background: var(--md-sys-color-surface-container-high, #e8e8e8);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-2);
 }
 
-/* Selection Indicator */
-.selection-checkbox {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid var(--md-sys-color-outline, #79747e);
+/* Leading */
+.leading-container {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
-  transition: all 0.2s ease;
-  background: transparent;
+  flex-shrink: 0;
 }
 
-.selection-checkbox.selected {
-  background: var(--md-sys-color-primary, #6750a4);
-  border-color: var(--md-sys-color-primary, #6750a4);
+.recruit-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.check-mark {
-  color: white;
-  font-size: 14px;
-  font-weight: bold;
+.avatar-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  border: 2px solid var(--md-sys-color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.scale-enter-active,
-.scale-leave-active {
-  transition: transform 0.2s ease;
+.avatar-checkbox.checked {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
 }
 
-.scale-enter-from,
-.scale-leave-to {
-  transform: scale(0);
+.check-icon {
+  color: var(--md-sys-color-on-primary);
 }
+
+/* Swap Transition */
+.swap-rotate-enter-active,
+.swap-rotate-leave-active {
+  transition: all 0.2s var(--md-sys-motion-easing-standard);
+}
+
+.swap-rotate-enter-from {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+}
+
+.swap-rotate-leave-to {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+
 
 /* Header Layout */
 .card-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 /* Recruit Info */
 .recruit-info {
   flex: 1;
   min-width: 0;
-}
-
-.recruit-header {
-  margin-bottom: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
 .recruit-name {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 1rem;
+  color: var(--md-sys-color-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--md-sys-color-on-surface, #1c1b1f);
 }
 
 /* Stats Row */
@@ -263,11 +292,11 @@ function openRoyaleAPI() {
   align-items: center;
   gap: 0.25rem;
   font-size: 0.75rem;
-  color: var(--md-sys-color-outline, #79747e);
+  color: var(--md-sys-color-outline);
 }
 
 .stat-icon {
-  font-size: 0.625rem;
+  color: var(--md-sys-color-outline);
 }
 
 /* Action Area */
@@ -283,83 +312,59 @@ function openRoyaleAPI() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 1rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 
 .tone-high {
-  background: var(--md-sys-color-primary-container, #eaddff);
-  color: var(--md-sys-color-on-primary-container, #21005e);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
 }
 
 .tone-mid {
-  background: var(--md-sys-color-secondary-container, #e8def8);
-  color: var(--md-sys-color-on-secondary-container, #1e192b);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
 }
 
 .tone-low {
-  background: var(--md-sys-color-surface-variant, #e7e0ec);
-  color: var(--md-sys-color-on-surface-variant, #49454f);
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .stat-score {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
 }
 
 .stat-sub {
-  font-size: 0.5rem;
+  font-size: 0.45rem;
   font-weight: 700;
   opacity: 0.7;
   margin-top: 2px;
   text-transform: uppercase;
 }
 
-/* Chevron */
-.chevron-btn {
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--md-sys-color-on-surface-variant, #49454f);
-  opacity: 0.5;
-  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
-}
-
-.chevron-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.chevron-open {
-  transform: rotate(180deg);
-  opacity: 1;
-}
-
 /* Expanded Body */
 .card-body {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s var(--md-sys-motion-easing-emphasized);
 }
 
 .card-body-open {
-  max-height: 300px;
-  opacity: 1;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--md-sys-color-outline-variant, #cac4d0);
+  grid-template-rows: 1fr;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
 }
+
+.expanded-content {
+  overflow: hidden;
+}
+
 
 /* Grid Stats */
 .grid-stats {
@@ -370,7 +375,7 @@ function openRoyaleAPI() {
 }
 
 .stat-box {
-  background: var(--md-sys-color-surface-container, #f3f3f3);
+  background: var(--md-sys-color-surface-container-high);
   padding: 0.75rem 0.5rem;
   border-radius: 0.75rem;
   text-align: center;
@@ -381,14 +386,14 @@ function openRoyaleAPI() {
   font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  color: var(--md-sys-color-outline, #79747e);
+  color: var(--md-sys-color-outline);
   margin-bottom: 0.25rem;
 }
 
 .stat-box-value {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--md-sys-color-on-surface, #1c1b1f);
+  color: var(--md-sys-color-on-surface);
 }
 
 /* Action Buttons */
@@ -399,26 +404,26 @@ function openRoyaleAPI() {
 
 .btn-action {
   flex: 1;
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   border: none;
-  border-radius: 1.5rem;
+  border-radius: 2rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.1s ease;
 }
 
 .btn-action:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .btn-primary {
-  background: var(--md-sys-color-primary, #6750a4);
-  color: var(--md-sys-color-on-primary, #ffffff);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
 }
 
 .btn-secondary {
-  background: var(--md-sys-color-secondary-container, #e8def8);
-  color: var(--md-sys-color-on-secondary-container, #1e192b);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
 }
 </style>
