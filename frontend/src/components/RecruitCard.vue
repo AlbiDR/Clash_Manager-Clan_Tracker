@@ -29,6 +29,25 @@ const timeAgo = computed(() => {
   return `${Math.floor(diffDays / 7)}w ago`
 })
 
+// Computed classes to avoid template object parsing issues
+const cardClasses = computed(() => [
+  'recruit-card',
+  props.selected ? 'recruit-card-selected' : '',
+  props.expanded ? 'recruit-card-expanded' : ''
+].filter(Boolean).join(' '))
+
+const indicatorClasses = computed(() => 
+  props.selected ? 'selection-indicator active' : 'selection-indicator'
+)
+
+const chevronClasses = computed(() =>
+  props.expanded ? 'chevron-btn chevron-open' : 'chevron-btn'
+)
+
+const bodyClasses = computed(() =>
+  props.expanded ? 'card-body card-body-open' : 'card-body'
+)
+
 // Tonal color class based on score
 function getScoreTone(score: number): string {
   if (score >= 80) return 'tone-high'
@@ -55,15 +74,11 @@ function openRoyaleAPI() {
 
 <template>
   <div 
-    class="recruit-card"
-    :class="{ 
-      'recruit-card-selected': selected,
-      'recruit-card-expanded': expanded
-    }"
+    :class="cardClasses"
     @click="handleClick"
   >
     <!-- Selection Indicator -->
-    <div v-if="selectionMode" class="selection-indicator" :class="{ active: selected }">
+    <div v-if="selectionMode" :class="indicatorClasses">
       <span v-if="selected">✓</span>
     </div>
     
@@ -97,14 +112,14 @@ function openRoyaleAPI() {
           <span class="stat-score">{{ Math.round(recruit.s) }}</span>
           <span class="stat-sub">SCORE</span>
         </div>
-        <div class="chevron-btn" :class="{ 'chevron-open': expanded }">
+        <div :class="chevronClasses">
           <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
     </div>
     
     <!-- Expanded Details -->
-    <div class="card-body" :class="{ 'card-body-open': expanded }">
+    <div :class="bodyClasses">
       <!-- Grid Stats -->
       <div class="grid-stats">
         <div class="stat-box">

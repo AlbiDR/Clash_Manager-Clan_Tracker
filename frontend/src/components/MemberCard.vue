@@ -26,11 +26,6 @@ function formatRole(role: string): string {
   return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
 }
 
-function formatScore(score: number): string {
-  if (score >= 10000) return `${(score / 1000).toFixed(1)}k`
-  return score.toLocaleString()
-}
-
 // Tonal color class based on score
 function getScoreTone(score: number): string {
   if (score >= 80) return 'tone-high'

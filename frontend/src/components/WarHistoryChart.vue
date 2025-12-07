@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
-  history: string
+  history?: string
 }>()
 
 // Parse war history string (Format: "Score WeekID | Score WeekID...")
@@ -12,7 +12,7 @@ const bars = computed(() => {
   
   const entries = props.history
     .split('|')
-    .map(x => parseInt(x.trim().split(' ')[0]) || 0)
+    .map(x => parseInt((x.trim().split(' ')[0]) ?? '0') || 0)
     .reverse() // Oldest → Newest (left to right)
   
   // Cap at 52 weeks (1 year)
