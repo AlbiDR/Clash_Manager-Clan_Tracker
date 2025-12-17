@@ -122,7 +122,7 @@ const editorUrl = computed(() => {
       <div class="cards-stack">
         
         <!-- 🌐 Unified Network Dashboard -->
-        <section class="glass-panel top-card">
+        <section class="glass-panel">
             <header class="card-header">
                 <div class="icon-box">
                     <Icon name="plug" size="24" />
@@ -225,7 +225,7 @@ const editorUrl = computed(() => {
         </section>
 
         <!-- 📦 System Modules (Tech Specs) -->
-        <section class="glass-panel bottom-card" v-if="pingData?.modules">
+        <section class="glass-panel" v-if="pingData?.modules">
             <header class="card-header">
                 <div class="icon-box">
                     <Icon name="box" size="24" />
@@ -236,21 +236,23 @@ const editorUrl = computed(() => {
                 </div>
             </header>
 
-            <!-- Specs Grid (Body) -->
-            <div class="specs-grid">
-                <div 
-                    v-for="(version, name) in pingData.modules" 
-                    :key="name"
-                    class="spec-item"
-                >
-                    <span class="spec-label">{{ name }}</span>
-                    <span class="spec-value">v{{ version }}</span>
+            <div class="card-body">
+                <!-- Specs Grid (Body) -->
+                <div class="specs-grid">
+                    <div
+                        v-for="(version, name) in pingData.modules"
+                        :key="name"
+                        class="spec-item"
+                    >
+                        <span class="spec-label">{{ name }}</span>
+                        <span class="spec-value">v{{ version }}</span>
+                    </div>
                 </div>
             </div>
         </section>
         
         <!-- 🛠️ Troubleshooting (Neutral) -->
-        <section class="glass-panel util-card">
+        <section class="glass-panel">
             <header class="card-header">
                 <div class="icon-box util-icon-box">
                     <Icon name="undo" size="24" />
@@ -296,7 +298,7 @@ const editorUrl = computed(() => {
 .cards-stack {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-l); /* Gap between the distinct card groups */
+    /* gap: var(--spacing-l); */ /* Gap between the distinct card groups */
 }
 
 /* --- GLASS PANEL --- */
@@ -305,11 +307,25 @@ const editorUrl = computed(() => {
     backdrop-filter: var(--sys-surface-glass-blur);
     -webkit-backdrop-filter: var(--sys-surface-glass-blur);
     border: 1px solid var(--sys-surface-glass-border);
-    border-radius: var(--shape-corner-l);
+    /* border-radius: var(--shape-corner-l); */
     overflow: hidden;
     box-shadow: var(--sys-elevation-2);
     transition: transform 0.4s var(--sys-motion-spring);
     animation: fadeSlideIn 0.6s backwards;
+
+    /* Remove bottom border to connect cards */
+    border-bottom-width: 0;
+}
+
+.glass-panel:first-child {
+    border-top-left-radius: var(--shape-corner-l);
+    border-top-right-radius: var(--shape-corner-l);
+}
+
+.glass-panel:last-child {
+    border-bottom-left-radius: var(--shape-corner-l);
+    border-bottom-right-radius: var(--shape-corner-l);
+    border-bottom-width: 1px; /* Restore bottom border on last card */
 }
 
 /* --- HEADER --- */
@@ -319,7 +335,8 @@ const editorUrl = computed(() => {
     gap: var(--spacing-m);
     padding: var(--spacing-l);
     background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    /* border-bottom: 1px solid rgba(255, 255, 255, 0.05); */
+    border-bottom: 1px solid var(--sys-surface-glass-border);
 }
 
 .icon-box {
@@ -368,7 +385,9 @@ const editorUrl = computed(() => {
 .status-pill.unconfigured { color: var(--sys-color-error); background: rgba(var(--sys-rgb-error), 0.1); }
 
 /* --- CARD BODY --- */
-.card-body { padding: var(--spacing-l); }
+.card-body {
+    padding: var(--spacing-l);
+}
 
 .network-stats {
     display: grid; grid-template-columns: repeat(3, 1fr);
@@ -512,9 +531,10 @@ const editorUrl = computed(() => {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1px;
-    background: rgba(255,255,255,0.05); /* Grid Lines */
-    /* Ensure no double borders */
-    border-top: 1px solid rgba(255,255,255,0.05);
+    background: var(--sys-color-surface-container); /* Grid Lines */
+    border: 1px solid var(--sys-color-surface-container-high);
+    border-radius: var(--shape-corner-m);
+    overflow: hidden;
 }
 
 .spec-item {
@@ -526,13 +546,9 @@ const editorUrl = computed(() => {
 .spec-value { font-size: 15px; font-weight: 700; color: var(--sys-color-primary); font-family: var(--sys-font-family-mono); }
 
 /* --- TROUBLESHOOTING (Formerly Danger Zone) --- */
-.util-card {
-    border-color: rgba(var(--sys-color-outline-variant), 0.3);
-}
-
 .util-icon-box {
-    background: var(--sys-color-surface-container-highest);
-    color: var(--sys-color-on-surface);
+    background: rgba(var(--sys-rgb-error), 0.1);
+    color: var(--sys-color-error);
 }
 
 .util-content {
@@ -552,14 +568,16 @@ const editorUrl = computed(() => {
     width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 8px;
     padding: 12px 24px;
-    background: var(--sys-color-surface-container-high);
-    color: var(--sys-color-on-surface);
+    background: rgba(var(--sys-rgb-error), 0.1);
+    color: var(--sys-color-error);
     border-radius: var(--shape-corner-full);
-    border: 1px solid var(--sys-color-outline-variant);
+    border: 1px solid rgba(var(--sys-rgb-error), 0.3);
     font-weight: 700;
     cursor: pointer;
     transition: transform 0.2s, background 0.2s;
 }
+
+.reset-all-btn:hover { background: rgba(var(--sys-rgb-error), 0.2); }
 .reset-all-btn:active { transform: scale(0.96); background: var(--sys-color-surface-container-highest); }
 
 /* --- HERO (APP INFO) --- */
